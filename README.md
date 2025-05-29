@@ -1,4 +1,4 @@
-[![DOI](https://zenodo.org/badge/986340686.svg)](https://doi.org/10.5281/zenodo.15464993)
+[![DOI](https://zenodo.org/badge/992387031.svg)](https://doi.org/10.5281/zenodo.15542009)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 # Deep IAQ Imputation & Forecasting Evaluation Framework
