@@ -3,7 +3,7 @@
 
 # Deep IAQ Imputation & Forecasting Evaluation Framework
 
-This repository provides a modular, extensible framework for benchmarking deep‐learning–based imputation models on indoor air quality (IAQ) time-series data and evaluating their downstream forecasting performance. It supports multiple missing-data mechanisms (MCAR, MAR, MNAR, block missingness) and applies a sliding-window reconstruction strategy for all deep models.
+This repository provides a modular, extensible framework for benchmarking deep‐learning–based imputation models on indoor air quality (IAQ) time-series data and evaluating their downstream forecasting performance. 
 
 ---
 
