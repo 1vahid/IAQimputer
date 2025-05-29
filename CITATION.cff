@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the DOI below."
+authors:
+  - family-names: Ghorbani
+    given-names: Vahid
+
+title: "Deep Learning–Based Imputation of Indoor Air Quality Data"
+version: "1.0.0"
+doi: ""            # ← will fill this after Zenodo mints the DOI
+date-released: 2025-05-29
