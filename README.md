@@ -49,7 +49,7 @@ This repository provides a modular, extensible framework for benchmarking deepâ€
 ---
 
 > ðŸ” **Data Location**  
-> The dataset for this evaluation is located in the  
+> The dataset for this evaluation should be located in the  
 > `analysis_results/` directory.
 
 ---
