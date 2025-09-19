@@ -2,11 +2,19 @@
 
 # Deep IAQ Imputation & Forecasting Evaluation Framework
 
+Official implementation of the paper:  
+**"Evaluating Deep Learning Data Imputation for Subway Indoor Air Quality: Accuracy, Efficiency, and Implications for Downstream Tasks"**  
+*Building and Environment, 2025*  
+[![DOI](https://img.shields.io/badge/DOI-10.1016%2Fj.buildenv.2025.113713-blue)](https://doi.org/10.1016/j.buildenv.2025.113713)  
+[ScienceDirect Link](https://www.sciencedirect.com/science/article/pii/S0360132325011837)
+
+---
+
 This repository provides a modular, extensible framework for benchmarking deep‐learning–based imputation models on indoor air quality (IAQ) time-series data and evaluating their downstream forecasting performance. 
 
 ---
 
-## Repository Structure
+## 📂 Repository Structure
 
 - **`config.py`**  
   Global configuration: data paths, model output directories, common training parameters, and rename mappings for plots.
@@ -46,7 +54,7 @@ This repository provides a modular, extensible framework for benchmarking deep�
 
 ---
 
-## Dependencies
+## ⚙️ Dependencies
 
 Ensure you have **Python 3.8+** installed, and include the following in your `requirements.txt`:
 
@@ -58,3 +66,17 @@ seaborn
 xgboost
 torch
 pypots
+
+## ✍️ Citation
+
+If you use this repository in your research, please cite:
+
+```bibtex
+@article{GHORBANI2025113713,
+  title   = {Evaluating Deep Learning Data Imputation for Subway Indoor Air Quality: Accuracy, Efficiency, and Implications for Downstream Tasks},
+  author  = {Vahid Ghorbani and Amir Ghorbani and ChangKyoo Yoo},
+  journal = {Building and Environment},
+  year    = {2025},
+  pages   = {113713},
+  doi     = {10.1016/j.buildenv.2025.113713}
+}
