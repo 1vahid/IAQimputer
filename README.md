@@ -62,7 +62,7 @@ SAITS · Transformer · BRITS · MICN · FreTS · CSDI · US-GAN · USGAN · GP-
 ### 1️⃣ Clone the repo
 ```bash
 git clone https://github.com/1vahid/IAQimputer.git
-cd DIAQimputer
+cd IAQimputer
 ```
 
 ### 2️⃣ Install dependencies
