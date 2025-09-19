@@ -1,11 +1,13 @@
-# main.py
+#main.py
 import os
-import time                                      
+import time                                       # ← optional: if used elsewhere
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import random
 import torch
+import matplotlib.patches as mpatches
+import torch.nn as nn
 
 SEED = 42
 torch.manual_seed(SEED)
@@ -56,8 +58,89 @@ def main():
     # ---------------------------
     tuned_params_file = os.path.join(OPT_DIR, "tuned_hyperparameters_summary.csv")
     if os.path.exists(tuned_params_file):
-        tuned_params_df = pd.read_csv(tuned_params_file, index_col=0)
-        tuned_params    = tuned_params_df.to_dict(orient="index")
+        #tuned_params_df = pd.read_csv(tuned_params_file, index_col=0)
+        #tuned_params    = tuned_params_df.to_dict(orient="index")
+       
+
+# -----------------------------------------------------------------------------
+# Hard-coded hyper-parameter table (was originally in CSV)
+# -----------------------------------------------------------------------------
+        tuned_params_df = pd.DataFrame.from_dict({
+    "USGAN": {
+        "rnn_hidden_size":    128,
+        "lambda_mse":         0.05,
+        "hint_rate":          0.2,
+        "dropout":            0.2,
+    },
+    "BRITS": {
+        "rnn_hidden_size":    256,
+    },
+    "StemGNN": {
+        "dropout":            0.2,
+        "n_layers":           2,
+        "d_model":            64,
+        "n_stacks":           2,
+    },
+    "Transformer": {
+        "dropout":            0.2,
+        "n_layers":           2,
+        "d_model":            64,
+        "n_heads":            4,
+        "d_k":                16,
+        "d_v":                16,
+        "d_ffn":              256,
+        "attn_dropout":       0.1,
+    },
+    "SAITS": {
+        "dropout":            0.2,
+        "n_layers":           3,
+        "d_model":            128,
+        "n_heads":            8,
+        "d_k":                128,
+        "d_v":                64,
+        "d_ffn":              256,
+        "attn_dropout":       0.2,
+    },
+    "CSDI": {
+        "n_layers":           2,
+        "n_heads":            8,
+        "n_channels":         128,
+        "d_time_embedding":   16,
+        "d_feature_embedding":32,
+        "d_diffusion_embedding":32,
+    },
+    "MICN": {
+        "n_layers":           4,
+        "d_model":            64,
+        "conv_kernel":        [3],
+    },
+    "FreTS": {
+        "embed_size":         32,
+        "hidden_size":        256,
+        "channel_independence": False,
+    },
+    "GPVAE": {
+        "latent_size":        16,
+        "encoder_sizes":      (64, 32),
+        "decoder_sizes":      (64, 128),
+        "beta":               1,
+        "M":                  1,
+        "K":                  1,
+        "sigma":              1,
+        "length_scale":       2,
+        "kernel_scales":      1,
+    },
+}, orient="index")
+
+# Example usage:
+# transformer_params = tuned_params_df.loc["Transformer"].to_dict()
+# usgan_params       = tuned_params_df.loc["USGAN"].to_dict()
+        # Convert the DataFrame into a dict-of-dicts once
+        tuned_params = {
+            model_name: tuned_params_df.loc[model_name].dropna().to_dict()
+            for model_name in tuned_params_df.index
+        }
+
         print("Loaded tuned hyperparameters from file:")
         print(tuned_params_df)
     else:
@@ -216,7 +299,7 @@ def main():
             window_size, n_features, train_windows,
             os.path.join(MODEL_DIR, "stemgnn_model.pkl"),
             tuned_params.get("StemGNN", {}),
-            {"n_layers":2,"d_model":64,"dropout":0.1}
+            {"n_layers":2,"d_model":64,"dropout":0.1,"n_stacks":2}
         )
     except Exception as e:
         print("StemGNN failed:", e)
@@ -224,7 +307,10 @@ def main():
 
     brits_model       = train_or_load_brits(
         window_size, n_features, train_windows,
-        os.path.join(MODEL_DIR, "brits_model.pkl")
+        os.path.join(MODEL_DIR, "brits_model.pkl"),
+        tuned_params.get("BRITS", {}),
+            {"rnn_hidden_size":256}
+
     )
 
     try:
@@ -238,28 +324,23 @@ def main():
         print("FreTS failed:", e)
         frets_model    = None
 
-    try:
-        micn_model     = train_or_load_micn(
+
+    micn_model     = train_or_load_micn(
             window_size, n_features, train_windows,
             os.path.join(MODEL_DIR, "micn_model.pkl"),
             tuned_params.get("MICN", {}),
-            {"n_layers":2,"d_model":64,"conv_kernel":[3]}
+            {"n_layers":2,"d_model":64, "conv_kernel":[3]}
         )
-    except Exception as e:
-        print("MICN failed:", e)
-        micn_model     = None
+    
 
-    try:
-        gpvae_model    = train_or_load_gpvae(
+    gpvae_model    = train_or_load_gpvae(
             window_size, n_features, train_windows,
             os.path.join(MODEL_DIR, "gpvae_model.pkl"),
             tuned_params.get("GPVAE", {}),
             {"latent_size":16,"encoder_sizes":(64,32),"decoder_sizes":(32,64),
              "beta":1.0,"M":1,"K":1,"sigma":1.0,"length_scale":1.0,"kernel_scales":1}
         )
-    except Exception as e:
-        print("GPVAE failed:", e)
-        gpvae_model    = None
+
 
     print("Loading/Training Forecasting Transformer…")
     forecasting_transformer = load_or_train_forecasting_transformer(
@@ -503,6 +584,107 @@ def main():
     print(f"Forecast CSV → {forecast_results_csv}")
     print(f"Forecast figure → {fig_path}")
     print("\nAll evaluations completed.")
+
+       # ---------------------------
+    # Transformer Imputation for MCAR-90%
+    # (legend only for PM1, placed bottom center)
+    # ---------------------------
+
+    os.makedirs("analysis_results", exist_ok=True)
+    mcar_key  = r"$\text{MCAR}_{50\%}$"
+    mcar_norm = scenarios_test[mcar_key]
+
+    # 1. Run Transformer imputation
+    sim_w       = create_windows(mcar_norm, window_size)
+    res_tf      = transformer_model.predict({"X": sim_w})
+    pred_tf     = process_prediction_result(res_tf)
+    if pred_tf.ndim == 4:
+        pred_tf = pred_tf.mean(axis=1)
+    rec_tf      = reconstruct_series(pred_tf, window_size, len(test_df_orig))
+    imputed_norm_tf   = pd.DataFrame(rec_tf,
+                                     index=test_df_orig.index,
+                                     columns=test_df_orig.columns)
+    imputed_denorm_tf = imputed_norm_tf * train_std + train_mean
+
+    # 2. Loop over each sensor
+    for sensor in selected_cols:
+        # Build DataFrame and save CSV
+        df_export = pd.DataFrame({
+            "ground_truth":        test_df_orig[sensor],
+            "transformer_imputed": imputed_denorm_tf[sensor],
+            "was_missing":         mcar_norm[sensor].isna().astype(int)
+        }, index=test_df_orig.index)
+
+        csv_path = os.path.join(
+            "analysis_results",
+            f"transformer_MCAR50_{sensor.replace(' ', '_')}_data.csv"
+        )
+        df_export.to_csv(csv_path)
+        print(f"Saved CSV → {csv_path}")
+
+        # Locate missing blocks
+        na, blocks, in_block = df_export["was_missing"]==1, [], False
+        for idx in df_export.index:
+            if na.loc[idx] and not in_block:
+                start, in_block = idx, True
+            elif not na.loc[idx] and in_block:
+                blocks.append((start, prev_idx))
+                in_block = False
+            prev_idx = idx
+        if in_block:
+            blocks.append((start, prev_idx))
+
+        # Display label with proper subscript formatting and unit
+        disp_label = RENAME_MAP.get(sensor, sensor) + " (µg/m³)"
+
+        # Only show legend for PM1 sensors
+        show_legend = "PM1" in sensor
+
+        # Plot
+        fig, ax = plt.subplots(figsize=(12, 6))
+        # Shade missing intervals
+        for start, end in blocks:
+            ax.axvspan(start, end, color="lightgray", alpha=0.4)
+        # Plot lines
+        ax.plot(df_export["ground_truth"],        label="Ground Truth",        linewidth=1.5)
+        ax.plot(df_export["transformer_imputed"], label="Transformer Imputation",linewidth=1.5)
+
+        # Truncate x-axis to drop last tick
+        ax.set_xlim(df_export.index[0], df_export.index[-2])
+
+        # Axis labels & ticks
+        ax.set_xlabel("Time",                   fontsize=24)
+        ax.set_ylabel(disp_label,               fontsize=24)
+        ax.tick_params(axis='x', labelsize=22)
+        ax.tick_params(axis='y', labelsize=22)
+
+        # Legend (only for PM1), placed bottom center
+        if show_legend:
+            missing_patch = mpatches.Patch(color="lightgray", alpha=0.4, label="Missing data")
+            handles, labels = ax.get_legend_handles_labels()
+            handles.append(missing_patch)
+            labels.append("Missing data")
+            ax.legend(handles=handles, labels=labels,
+                      fontsize=18,
+                      loc='lower center',
+                      bbox_to_anchor=(0.5, -0.3),
+                      ncol=3,
+                      frameon=False)
+
+        plt.tight_layout()
+
+        # Save high-res PNG
+        png_path = os.path.join(
+            "analysis_results",
+            f"transformer_MCAR50_{sensor.replace(' ', '_')}.png"
+        )
+        plt.savefig(png_path, dpi=600, bbox_inches="tight")
+        plt.close(fig)
+
+        print(f"Saved plot → {png_path}")
+
+
+
 
 if __name__ == "__main__":
     main()
