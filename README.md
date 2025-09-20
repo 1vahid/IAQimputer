@@ -73,7 +73,7 @@ pip install -r requirements.txt
 
 ### 3️⃣ Run the pipeline
 ```bash
-python main.py --model transformer --scenario MAR
+python main.py
 ```
 
 👉 This will:  
